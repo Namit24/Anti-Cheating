@@ -6,9 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Exam {
@@ -49,6 +48,7 @@ model Incident {
   exam         Exam     @relation(fields: [examId], references: [id])
   incidentType String // copy_paste, blocked_site, extension_disabled, tab_switch, nlp_suspicious
   details      String   @db.Text
+  url          String?  @db.Text
   screenshot   String?  @db.Text
   timestamp    DateTime
   createdAt    DateTime @default(now())

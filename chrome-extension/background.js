@@ -55,6 +55,19 @@ const blacklistedDomains = [
   "dall-e",
   "dalle",
   "chatbot.openai",
+  "programiz.com",
+  "onlinegdb.com",
+  "replit.com",
+  "codepen.io",
+  "jsfiddle.net",
+  "codesandbox.io",
+  "leetcode.com",
+  "hackerrank.com",
+  "codechef.com",
+  "codeforces.com",
+  "geeksforgeeks.org",
+  "w3schools.com",
+  "stackoverflow.com",
 ]
 
 // Default API URL (will be overridden by config.js)
@@ -95,19 +108,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === "copyPasteDetected") {
-    reportIncident("copy_paste", message.content || "Copy-paste action detected")
+    reportIncident("copy_paste", message.content || "Copy-paste action detected", message.url || "Unknown site")
     sendResponse({ success: true })
     return true
   }
 
   if (message.action === "tabSwitchDetected") {
-    reportIncident("tab_switch", "Tab or window switch detected")
+    reportIncident("tab_switch", "Tab or window switch detected", message.url || "Unknown site")
+    sendResponse({ success: true })
+    return true
+  }
+
+  if (message.action === "blockedSiteDetected") {
+    reportIncident("blocked_site", message.content || "Attempted to access blocked site", message.url || "Unknown site")
     sendResponse({ success: true })
     return true
   }
 
   if (message.action === "nlpSuspicious") {
-    reportIncident("nlp_suspicious", message.content || "Suspicious code pattern detected")
+    reportIncident(
+        "nlp_suspicious",
+        message.content || "Suspicious code pattern detected",
+        message.url || "Unknown site",
+    )
     sendResponse({ success: true })
     return true
   }
@@ -155,7 +178,7 @@ function startMonitoring(sId, eId) {
   setInterval(checkPeriodicExtensionStatus, 30000)
 
   // Report that monitoring has started
-  reportIncident("extension_started", "Exam proctoring started")
+  reportIncident("extension_started", "Exam proctoring started", "Extension")
 }
 
 // Start sending heartbeats to the server
@@ -187,14 +210,14 @@ function startHeartbeat() {
     } catch (error) {
       console.error("Heartbeat error:", error)
     }
-  }, 15000) // Send heartbeat every 15 seconds
+  }, 10000) // Send heartbeat every 10 seconds (reduced from 15s)
 }
 
 // Stop monitoring
 function stopMonitoring() {
   // Report that monitoring has stopped
   if (monitoring && studentId && examId) {
-    reportIncident("extension_stopped", "Exam proctoring stopped")
+    reportIncident("extension_stopped", "Exam proctoring stopped", "Extension")
   }
 
   monitoring = false
@@ -225,7 +248,7 @@ function checkWebNavigation(details) {
 
   // Check if the domain is blacklisted
   if (blacklistedDomains.some((blockedDomain) => domain.includes(blockedDomain))) {
-    reportIncident("blocked_site", `Visited blocked website: ${domain}`)
+    reportIncident("blocked_site", `Visited blocked website: ${domain}`, details.url)
   }
 }
 
@@ -233,8 +256,24 @@ function checkWebNavigation(details) {
 function handleTabChange(activeInfo) {
   if (!monitoring) return
 
-  // Report tab change incident
-  reportIncident("tab_switch", "Student switched to another tab")
+  // Get the URL of the active tab
+  chrome.tabs.get(activeInfo.tabId, (tab) => {
+    if (chrome.runtime.lastError) {
+      console.error(chrome.runtime.lastError)
+      return
+    }
+
+    const url = tab.url || "Unknown URL"
+    const domain = url ? new URL(url).hostname : "Unknown domain"
+
+    // Check if the domain is blacklisted
+    if (blacklistedDomains.some((blockedDomain) => domain.includes(blockedDomain))) {
+      reportIncident("blocked_site", `Visited blocked website: ${domain}`, url)
+    } else {
+      // Report tab change incident with URL
+      reportIncident("tab_switch", `Student switched to another tab: ${domain}`, url)
+    }
+  })
 }
 
 // Handle window focus changes
@@ -243,12 +282,12 @@ function handleWindowFocusChange(windowId) {
 
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
     // Window lost focus
-    reportIncident("tab_switch", "Student switched to another application")
+    reportIncident("tab_switch", "Student switched to another application", "External application")
   }
 }
 
 // Report incidents to the server
-async function reportIncident(incidentType, details) {
+async function reportIncident(incidentType, details, url) {
   if (!monitoring || !studentId || !examId) return
 
   try {
@@ -257,8 +296,8 @@ async function reportIncident(incidentType, details) {
       const lastReportTime = result[`lastReport_${incidentType}`] || 0
       const now = Date.now()
 
-      // Only report if it's been at least 30 seconds since the last report of this type
-      if (now - lastReportTime > 30000) {
+      // Only report if it's been at least 20 seconds since the last report of this type (reduced from 30s)
+      if (now - lastReportTime > 20000) {
         // Take a screenshot if possible
         let screenshot = null
 
@@ -278,6 +317,9 @@ async function reportIncident(incidentType, details) {
           console.error("Failed to query tabs:", tabQueryError)
         }
 
+        // Include the URL in the details
+        const enhancedDetails = `${details}\nURL: ${url}`
+
         const response = await fetch(`${API_URL}/incidents`, {
           method: "POST",
           headers: {
@@ -287,7 +329,8 @@ async function reportIncident(incidentType, details) {
             studentId,
             examId,
             incidentType,
-            details,
+            details: enhancedDetails,
+            url: url,
             screenshot,
           }),
         })

@@ -89,6 +89,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Set up polling to check for new exams
+  const examPollingInterval = setInterval(async () => {
+    // Only poll if we're on the login form
+    if (!loginForm.classList.contains("hidden")) {
+      try {
+        const response = await fetch(`${API_URL}/exams`)
+        if (!response.ok) throw new Error("Failed to fetch exams")
+
+        const exams = await response.json()
+        const activeExams = exams.filter((exam) => exam.status === "active")
+
+        // Check if we need to update the dropdown
+        const currentOptions = Array.from(examSelect.options)
+            .filter((opt) => opt.value) // Skip the default/placeholder option
+            .map((opt) => opt.value)
+
+        const newExamIds = activeExams.map((exam) => exam.id)
+
+        // If there are new exams or exams have been removed, refresh the list
+        if (
+            newExamIds.length !== currentOptions.length ||
+            newExamIds.some((id) => !currentOptions.includes(id)) ||
+            currentOptions.some((id) => !newExamIds.includes(id))
+        ) {
+          console.log("Exam list changed, refreshing...")
+          fetchActiveExams()
+        }
+      } catch (error) {
+        console.error("Error polling exams:", error)
+      }
+    }
+  }, 5000) // Check every 5 seconds
+
   // Register student for exam
   registerBtn.addEventListener("click", async () => {
     const name = nameInput.value.trim()
@@ -233,6 +266,11 @@ document.addEventListener("DOMContentLoaded", () => {
     loginForm.classList.add("hidden")
     examActive.classList.remove("hidden")
     loading.classList.add("hidden")
+
+    // Clear the polling interval when exam is active
+    if (examPollingInterval) {
+      clearInterval(examPollingInterval)
+    }
   }
 
   function showLoading() {

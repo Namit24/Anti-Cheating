@@ -32,6 +32,7 @@ export async function GET(request: Request) {
       examId: incident.examId,
       incidentType: incident.incidentType,
       details: incident.details,
+      url: incident.url || null,
       timestamp: incident.timestamp.toISOString(),
       screenshot: incident.screenshot || null,
     }))
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { studentId, examId, incidentType, details, screenshot } = body
+    const { studentId, examId, incidentType, details, screenshot, url } = body
 
     if (!studentId || !examId || !incidentType) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
         },
         incidentType,
         details: details || "",
+        url: url || null,
         timestamp: new Date(),
         screenshot: screenshot || null,
       },

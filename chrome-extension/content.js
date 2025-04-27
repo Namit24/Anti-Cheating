@@ -21,8 +21,10 @@ function initMonitoring() {
   // Block access to known AI sites immediately
   blockAISites()
 
-  // Listen for copy/paste events
-  document.addEventListener("paste", handlePaste)
+  // Listen for copy/paste events - more comprehensive approach
+  document.addEventListener("paste", handlePaste, true) // Use capture phase
+  document.addEventListener("copy", handleCopy, true) // Use capture phase
+  document.addEventListener("cut", handleCut, true) // Use capture phase
 
   // Listen for focus/blur events
   window.addEventListener("focus", handleFocus)
@@ -33,7 +35,7 @@ function initMonitoring() {
 
   // Detect code changes and analyze for suspicious patterns
   if (isCodeEditor()) {
-    setInterval(checkCodeChanges, 5000)
+    setInterval(checkCodeChanges, 3000) // More frequent checks (reduced from 5s)
   }
 
   // Set up a MutationObserver to detect DOM changes and rerun blocking
@@ -48,11 +50,140 @@ function initMonitoring() {
 
   // Periodically check for AI sites (in case the initial check was bypassed)
   setInterval(blockAISites, 1000)
+
+  // Add specific handlers for known coding platforms
+  setupCodePlatformHandlers()
+}
+
+// Set up specific handlers for known coding platforms
+function setupCodePlatformHandlers() {
+  const url = window.location.href.toLowerCase()
+
+  if (url.includes("programiz.com")) {
+    setupProgramizHandlers()
+  } else if (url.includes("leetcode.com")) {
+    setupLeetcodeHandlers()
+  } else if (url.includes("hackerrank.com")) {
+    setupHackerRankHandlers()
+  } else if (url.includes("codepen.io")) {
+    setupCodePenHandlers()
+  } else if (url.includes("replit.com")) {
+    setupReplitHandlers()
+  }
+}
+
+// Platform-specific handlers
+function setupProgramizHandlers() {
+  // For Programiz, we need to target their specific editor
+  const checkForEditor = setInterval(() => {
+    const editor =
+        document.querySelector(".CodeMirror") ||
+        document.querySelector(".ace_editor") ||
+        document.querySelector(".editor-container")
+
+    if (editor) {
+      clearInterval(checkForEditor)
+
+      // Add event listeners to the editor
+      editor.addEventListener(
+          "paste",
+          (e) => {
+            handlePaste(e, "Programiz editor")
+          },
+          true,
+      )
+
+      // Monitor keyboard events for potential paste shortcuts
+      editor.addEventListener(
+          "keydown",
+          (e) => {
+            // Ctrl+V or Cmd+V
+            if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+              setTimeout(() => checkCodeChanges("Programiz keyboard paste detected"), 100)
+            }
+          },
+          true,
+      )
+    }
+  }, 1000)
+}
+
+function setupLeetcodeHandlers() {
+  // Similar approach for LeetCode
+  const checkForEditor = setInterval(() => {
+    const editor = document.querySelector(".monaco-editor") || document.querySelector(".CodeMirror")
+
+    if (editor) {
+      clearInterval(checkForEditor)
+      editor.addEventListener(
+          "paste",
+          (e) => {
+            handlePaste(e, "LeetCode editor")
+          },
+          true,
+      )
+    }
+  }, 1000)
+}
+
+function setupHackerRankHandlers() {
+  // For HackerRank
+  const checkForEditor = setInterval(() => {
+    const editor = document.querySelector(".monaco-editor") || document.querySelector(".inputarea")
+
+    if (editor) {
+      clearInterval(checkForEditor)
+      editor.addEventListener(
+          "paste",
+          (e) => {
+            handlePaste(e, "HackerRank editor")
+          },
+          true,
+      )
+    }
+  }, 1000)
+}
+
+function setupCodePenHandlers() {
+  // For CodePen
+  const checkForEditor = setInterval(() => {
+    const editor = document.querySelector(".CodeMirror") || document.querySelector(".editor-box")
+
+    if (editor) {
+      clearInterval(checkForEditor)
+      editor.addEventListener(
+          "paste",
+          (e) => {
+            handlePaste(e, "CodePen editor")
+          },
+          true,
+      )
+    }
+  }, 1000)
+}
+
+function setupReplitHandlers() {
+  // For Replit
+  const checkForEditor = setInterval(() => {
+    const editor = document.querySelector(".monaco-editor") || document.querySelector(".cm-editor")
+
+    if (editor) {
+      clearInterval(checkForEditor)
+      editor.addEventListener(
+          "paste",
+          (e) => {
+            handlePaste(e, "Replit editor")
+          },
+          true,
+      )
+    }
+  }, 1000)
 }
 
 // Handle paste events
-function handlePaste(event) {
+function handlePaste(event, source = "document") {
   const now = Date.now()
+  const currentUrl = window.location.href
 
   // Check if monitoring is active
   chrome.storage.local.get(["monitoring"], (result) => {
@@ -64,14 +195,59 @@ function handlePaste(event) {
       pastedContent = event.clipboardData.getData("text")
     }
 
-    // Report paste event if content is substantial (more than 20 chars)
-    if (pastedContent.length > 20) {
+    // Report paste event if content is substantial (more than 10 chars - reduced from 20)
+    if (pastedContent.length > 10) {
       chrome.runtime.sendMessage({
         action: "copyPasteDetected",
-        content: pastedContent.substring(0, 200) + (pastedContent.length > 200 ? "..." : ""),
+        content: `Paste detected in ${source}: ${pastedContent.substring(0, 200)}${pastedContent.length > 200 ? "..." : ""}`,
+        url: currentUrl,
       })
 
       lastPasteTime = now
+    }
+  })
+}
+
+// Handle copy events
+function handleCopy(event) {
+  const currentUrl = window.location.href
+
+  // Check if monitoring is active
+  chrome.storage.local.get(["monitoring"], (result) => {
+    if (!result.monitoring) return
+
+    // Get selected text
+    const selectedText = window.getSelection().toString()
+
+    // Report copy event if content is substantial
+    if (selectedText.length > 10) {
+      chrome.runtime.sendMessage({
+        action: "copyPasteDetected",
+        content: `Copy detected: ${selectedText.substring(0, 200)}${selectedText.length > 200 ? "..." : ""}`,
+        url: currentUrl,
+      })
+    }
+  })
+}
+
+// Handle cut events
+function handleCut(event) {
+  const currentUrl = window.location.href
+
+  // Check if monitoring is active
+  chrome.storage.local.get(["monitoring"], (result) => {
+    if (!result.monitoring) return
+
+    // Get selected text
+    const selectedText = window.getSelection().toString()
+
+    // Report cut event if content is substantial
+    if (selectedText.length > 10) {
+      chrome.runtime.sendMessage({
+        action: "copyPasteDetected",
+        content: `Cut detected: ${selectedText.substring(0, 200)}${selectedText.length > 200 ? "..." : ""}`,
+        url: currentUrl,
+      })
     }
   })
 }
@@ -84,12 +260,14 @@ function handleFocus() {
 // Handle window blur
 function handleBlur() {
   documentHasFocus = false
+  const currentUrl = window.location.href
 
   // Report tab switch
   chrome.storage.local.get(["monitoring"], (result) => {
     if (result.monitoring) {
       chrome.runtime.sendMessage({
         action: "tabSwitchDetected",
+        url: currentUrl,
       })
     }
   })
@@ -97,6 +275,8 @@ function handleBlur() {
 
 // Handle visibility change
 function handleVisibilityChange() {
+  const currentUrl = window.location.href
+
   if (document.visibilityState === "hidden") {
     // Report tab switch with debouncing
     chrome.storage.local.get(["monitoring", "lastTabSwitchTime"], (result) => {
@@ -105,10 +285,11 @@ function handleVisibilityChange() {
       const now = Date.now()
       const lastReportTime = result.lastTabSwitchTime || 0
 
-      // Only report if it's been at least 10 seconds since the last report
-      if (now - lastReportTime > 10000) {
+      // Only report if it's been at least 5 seconds since the last report (reduced from 10s)
+      if (now - lastReportTime > 5000) {
         chrome.runtime.sendMessage({
           action: "tabSwitchDetected",
+          url: currentUrl,
         })
 
         // Store the time of this report
@@ -119,7 +300,7 @@ function handleVisibilityChange() {
 }
 
 // Check for suspicious code changes
-function checkCodeChanges() {
+function checkCodeChanges(trigger = "timer") {
   // Check if monitoring is active
   chrome.storage.local.get(["monitoring"], (result) => {
     if (!result.monitoring) return
@@ -129,6 +310,7 @@ function checkCodeChanges() {
     if (!codeElement) return
 
     const currentCode = getEditorContent(codeElement)
+    const currentUrl = window.location.href
 
     // If we have previous code to compare
     if (previousCode) {
@@ -136,10 +318,11 @@ function checkCodeChanges() {
       const addedLines = calculateAddedLines(previousCode, currentCode)
 
       // If substantial code was added quickly, report it
-      if (addedLines.length > 5 && Date.now() - lastPasteTime > 10000) {
+      if (addedLines.length > 3 && Date.now() - lastPasteTime > 5000) {
+        // Reduced threshold from 5 lines to 3
         // This indicates the student may have copied code but not directly pasted it
         // (e.g., using another method to bypass paste detection)
-        checkSuspiciousPattern(addedLines.join("\n"))
+        checkSuspiciousPattern(addedLines.join("\n"), currentUrl, trigger)
       }
     }
 
@@ -148,7 +331,7 @@ function checkCodeChanges() {
 }
 
 // Check for suspicious code patterns using server-side Python NLP
-async function checkSuspiciousPattern(code) {
+async function checkSuspiciousPattern(code, url, trigger = "unknown") {
   // First do a quick client-side check
   const suspiciousPatterns = [
     // Complex one-liners
@@ -176,7 +359,8 @@ async function checkSuspiciousPattern(code) {
   }
 
   // If locally suspicious or code is long enough to warrant checking
-  if (isLocallySuspicious || code.length > 200) {
+  if (isLocallySuspicious || code.length > 150) {
+    // Reduced threshold from 200 to 150
     // Get student and exam IDs
     chrome.storage.local.get(["monitoring", "studentId", "examId", "apiUrl"], async (result) => {
       if (!result.monitoring || !result.studentId || !result.examId) return
@@ -197,6 +381,8 @@ async function checkSuspiciousPattern(code) {
             code,
             studentId: result.studentId,
             examId: result.examId,
+            url: url,
+            trigger: trigger,
           }),
         })
 
@@ -216,7 +402,8 @@ async function checkSuspiciousPattern(code) {
         if (isLocallySuspicious) {
           chrome.runtime.sendMessage({
             action: "nlpSuspicious",
-            content: "Suspicious code pattern detected: " + code.substring(0, 200),
+            content: `Suspicious code pattern detected (${trigger}): ${code.substring(0, 200)}`,
+            url: url,
           })
         }
       }
@@ -304,6 +491,17 @@ function blockAISites() {
 
     // Set flag to indicate we've applied the blocked page
     blockedPageApplied = true
+
+    // Report the incident before blocking
+    chrome.storage.local.get(["monitoring", "studentId", "examId"], (result) => {
+      if (result.monitoring) {
+        chrome.runtime.sendMessage({
+          action: "blockedSiteDetected",
+          content: `Attempted to access blocked AI tool: ${currentDomain}`,
+          url: currentUrl,
+        })
+      }
+    })
 
     // Immediately stop any further page loading/rendering
     window.stop()
@@ -408,16 +606,6 @@ function blockAISites() {
       </html>
     `
 
-    // Report the incident
-    chrome.storage.local.get(["monitoring", "studentId", "examId"], (result) => {
-      if (result.monitoring) {
-        chrome.runtime.sendMessage({
-          action: "blocked_site",
-          content: `Attempted to access blocked AI tool: ${currentDomain} (${currentUrl})`,
-        })
-      }
-    })
-
     // Prevent any attempts to navigate away
     window.addEventListener("beforeunload", (e) => {
       e.preventDefault()
@@ -438,9 +626,17 @@ function isCodeEditor() {
       url.includes("jsfiddle.net") ||
       url.includes("leetcode.com") ||
       url.includes("hackerrank.com") ||
+      url.includes("programiz.com") ||
+      url.includes("onlinegdb.com") ||
+      url.includes("codechef.com") ||
+      url.includes("codeforces.com") ||
+      url.includes("geeksforgeeks.org") ||
       document.querySelector('textarea[class*="code"]') !== null ||
       document.querySelector('div[class*="editor"]') !== null ||
-      document.querySelector('pre[class*="code"]') !== null
+      document.querySelector('pre[class*="code"]') !== null ||
+      document.querySelector(".CodeMirror") !== null ||
+      document.querySelector(".monaco-editor") !== null ||
+      document.querySelector(".ace_editor") !== null
   )
 }
 
@@ -448,6 +644,9 @@ function isCodeEditor() {
 function getCodeEditorElement() {
   // Try to find common editor elements
   return (
+      document.querySelector(".CodeMirror") ||
+      document.querySelector(".monaco-editor") ||
+      document.querySelector(".ace_editor") ||
       document.querySelector('textarea[class*="code"]') ||
       document.querySelector('div[class*="editor"]') ||
       document.querySelector('pre[class*="code"]') ||
@@ -461,6 +660,19 @@ function getEditorContent(element) {
     return element.value
   } else if (element.getAttribute("contenteditable") === "true") {
     return element.innerText
+  } else if (element.classList.contains("CodeMirror")) {
+    // For CodeMirror editors
+    return element.CodeMirror ? element.CodeMirror.getValue() : element.textContent
+  } else if (element.classList.contains("monaco-editor")) {
+    // For Monaco editor (used by VS Code, LeetCode, etc.)
+    // This is a simplified approach, might need adjustment
+    const codeElements = element.querySelectorAll(".view-line")
+    return Array.from(codeElements)
+        .map((el) => el.textContent)
+        .join("\n")
+  } else if (element.classList.contains("ace_editor")) {
+    // For Ace editor
+    return element.textContent
   } else {
     return element.textContent
   }

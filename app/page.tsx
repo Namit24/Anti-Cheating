@@ -11,7 +11,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { Eye, AlertTriangle, BarChart3, Users, Clock } from "lucide-react"
+import { Eye, AlertTriangle, BarChart3, Users, Clock, Calendar, BookOpen, School } from "lucide-react"
 
 type Exam = {
   id: string
@@ -131,7 +131,7 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center">
                 <BarChart3 className="mr-2 h-5 w-5 text-blue-600" />
@@ -144,7 +144,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center">
                 <Clock className="mr-2 h-5 w-5 text-green-600" />
@@ -157,7 +157,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center">
                 <Users className="mr-2 h-5 w-5 text-purple-600" />
@@ -170,7 +170,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center">
                 <AlertTriangle className="mr-2 h-5 w-5 text-amber-600" />
@@ -191,12 +191,15 @@ export default function Dashboard() {
           </TabsList>
 
           <TabsContent value="start-exam">
-            <Card>
-              <CardHeader>
-                <CardTitle>Start New Exam</CardTitle>
+            <Card className="border-2 border-blue-100 shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                <CardTitle className="flex items-center">
+                  <School className="mr-2 h-5 w-5 text-blue-600" />
+                  Start New Exam
+                </CardTitle>
                 <CardDescription>Fill in the details to begin a new exam session.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <div className="space-y-2">
                   <Label htmlFor="room">Room Number</Label>
                   <Input
@@ -204,6 +207,7 @@ export default function Dashboard() {
                       placeholder="e.g. 401"
                       value={roomNumber}
                       onChange={(e) => setRoomNumber(e.target.value)}
+                      className="focus-within:border-blue-400 focus-within:ring-blue-200"
                   />
                 </div>
                 <div className="space-y-2">
@@ -213,6 +217,7 @@ export default function Dashboard() {
                       placeholder="e.g. CS101"
                       value={subjectCode}
                       onChange={(e) => setSubjectCode(e.target.value)}
+                      className="focus-within:border-blue-400 focus-within:ring-blue-200"
                   />
                 </div>
                 <div className="space-y-2">
@@ -222,14 +227,16 @@ export default function Dashboard() {
                       placeholder="e.g. Artificial Intelligence"
                       value={subjectName}
                       onChange={(e) => setSubjectName(e.target.value)}
+                      className="focus-within:border-blue-400 focus-within:ring-blue-200"
                   />
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-blue-100">
                 <Button
                     onClick={handleStartExam}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all"
                 >
+                  <Calendar className="mr-2 h-4 w-4" />
                   Start Exam
                 </Button>
               </CardFooter>
@@ -237,12 +244,15 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="active-exams">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Exams</CardTitle>
+            <Card className="border-2 border-blue-100 shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                <CardTitle className="flex items-center">
+                  <BookOpen className="mr-2 h-5 w-5 text-blue-600" />
+                  All Exams
+                </CardTitle>
                 <CardDescription>View and manage all exam sessions.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 {loading ? (
                     <div className="flex justify-center p-4">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -254,7 +264,7 @@ export default function Dashboard() {
                 ) : (
                     <div className="rounded-md border overflow-hidden">
                       <Table>
-                        <TableHeader className="bg-slate-50">
+                        <TableHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
                           <TableRow>
                             <TableHead>Room</TableHead>
                             <TableHead>Subject</TableHead>
@@ -267,7 +277,7 @@ export default function Dashboard() {
                         </TableHeader>
                         <TableBody>
                           {exams.map((exam) => (
-                              <TableRow key={exam.id} className="hover:bg-slate-50">
+                              <TableRow key={exam.id} className="hover:bg-blue-50 transition-colors">
                                 <TableCell className="font-medium">{exam.roomNumber}</TableCell>
                                 <TableCell>
                                   <div className="font-medium">{exam.subjectCode}</div>
@@ -300,7 +310,7 @@ export default function Dashboard() {
                                       variant="outline"
                                       size="sm"
                                       asChild
-                                      className="hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
+                                      className="hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
                                   >
                                     <Link href={`/exams/${exam.id}`}>
                                       <Eye className="h-4 w-4 mr-1" /> View
