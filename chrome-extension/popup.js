@@ -1,5 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_URL = "http://localhost:3000/api"
+  // Get API URL from config.js
+  const API_URL = window.API_URL || "https://anti-cheating-livid.vercel.app/api"
+
+  console.log("Using API URL:", API_URL)
 
   // UI Elements
   const loginForm = document.getElementById("login-form")
@@ -17,6 +20,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentStudent = null
   let currentExam = null
 
+  // Send API URL to background script
+  chrome.runtime.sendMessage({
+    action: "setApiUrl",
+    url: API_URL,
+  })
+
+  // Store API URL in storage
+  chrome.storage.local.set({ apiUrl: API_URL })
+
   // Check if student is already registered
   chrome.storage.local.get(["studentId", "examId"], (result) => {
     if (result.studentId && result.examId) {
@@ -30,10 +42,13 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchActiveExams() {
     showLoading()
     try {
+      console.log("Fetching exams from:", `${API_URL}/exams`)
       const response = await fetch(`${API_URL}/exams`)
       if (!response.ok) throw new Error("Failed to fetch exams")
 
       const exams = await response.json()
+      console.log("Fetched exams:", exams)
+
       const activeExams = exams.filter((exam) => exam.status === "active")
 
       // Clear placeholder option

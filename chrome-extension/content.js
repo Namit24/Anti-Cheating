@@ -4,6 +4,16 @@ let lastPasteTime = 0
 let documentHasFocus = true
 let blockedPageApplied = false
 
+// Default API URL (will be overridden if available)
+let API_URL = "https://anti-cheating-livid.vercel.app/api"
+
+// Try to get API URL from storage
+chrome.storage.local.get(["apiUrl"], (result) => {
+  if (result.apiUrl) {
+    API_URL = result.apiUrl
+  }
+})
+
 // Initialize monitoring
 function initMonitoring() {
   console.log("Exam Proctor: Initializing monitoring")
@@ -168,12 +178,17 @@ async function checkSuspiciousPattern(code) {
   // If locally suspicious or code is long enough to warrant checking
   if (isLocallySuspicious || code.length > 200) {
     // Get student and exam IDs
-    chrome.storage.local.get(["monitoring", "studentId", "examId"], async (result) => {
+    chrome.storage.local.get(["monitoring", "studentId", "examId", "apiUrl"], async (result) => {
       if (!result.monitoring || !result.studentId || !result.examId) return
+
+      // Update API_URL if available in storage
+      if (result.apiUrl) {
+        API_URL = result.apiUrl
+      }
 
       try {
         // Send to server for more sophisticated Python-based NLP analysis
-        const response = await fetch("http://localhost:3000/api/python/nlp-check", {
+        const response = await fetch(`${API_URL}/python/nlp-check`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

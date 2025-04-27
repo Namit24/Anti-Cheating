@@ -57,6 +57,9 @@ const blacklistedDomains = [
   "chatbot.openai",
 ]
 
+// Default API URL (will be overridden by config.js)
+let API_URL = "https://anti-cheating-livid.vercel.app/api"
+
 // Initialize extension
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Exam Proctor extension installed")
@@ -71,6 +74,13 @@ chrome.runtime.onStartup.addListener(() => {
 // Listen for messages from popup or content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Received message:", message)
+
+  if (message.action === "setApiUrl") {
+    API_URL = message.url
+    console.log("API URL set to:", API_URL)
+    sendResponse({ success: true })
+    return true
+  }
 
   if (message.action === "startMonitoring") {
     startMonitoring(message.studentId, message.examId)
@@ -105,7 +115,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Check extension status from storage
 function checkInitialExtensionStatus() {
-  chrome.storage.local.get(["monitoring", "studentId", "examId"], (result) => {
+  chrome.storage.local.get(["monitoring", "studentId", "examId", "apiUrl"], (result) => {
+    if (result.apiUrl) {
+      API_URL = result.apiUrl
+    }
+
     if (result.monitoring && result.studentId && result.examId) {
       startMonitoring(result.studentId, result.examId)
     }
@@ -118,7 +132,7 @@ function startMonitoring(sId, eId) {
   examId = eId
   monitoring = true
 
-  chrome.storage.local.set({ monitoring: true })
+  chrome.storage.local.set({ monitoring: true, apiUrl: API_URL })
 
   // Set up web navigation monitoring
   chrome.webNavigation.onCompleted.addListener(checkWebNavigation)
@@ -135,9 +149,7 @@ function startMonitoring(sId, eId) {
   startHeartbeat()
 
   // Register the uninstall URL to report if extension is removed
-  chrome.runtime.setUninstallURL(
-    `http://localhost:3000/api/incidents/extension-removed?studentId=${studentId}&examId=${examId}`,
-  )
+  chrome.runtime.setUninstallURL(`${API_URL}/incidents/extension-removed?studentId=${studentId}&examId=${examId}`)
 
   // Check if extension is disabled (periodic check)
   setInterval(checkPeriodicExtensionStatus, 30000)
@@ -158,7 +170,6 @@ function startHeartbeat() {
     if (!monitoring || !studentId || !examId) return
 
     try {
-      const API_URL = "http://localhost:3000/api"
       lastHeartbeatTime = Date.now()
 
       await fetch(`${API_URL}/students`, {
@@ -239,8 +250,6 @@ function handleWindowFocusChange(windowId) {
 // Report incidents to the server
 async function reportIncident(incidentType, details) {
   if (!monitoring || !studentId || !examId) return
-
-  const API_URL = "http://localhost:3000/api"
 
   try {
     // Get the last report time for this incident type

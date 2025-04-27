@@ -2,20 +2,34 @@
   "manifest_version": 3,
   "name": "Exam Proctor",
   "version": "1.0",
-  "description": "An exam proctoring system to prevent cheating during online exams",
-  "permissions": ["storage", "tabs", "webNavigation", "clipboardRead", "clipboardWrite"],
-  "host_permissions": ["http://localhost:3000/*"],
+  "description": "Monitors student activity during exams to prevent cheating",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "webNavigation",
+    "scripting",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "https://anti-cheating-livid.vercel.app/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "action": {
     "default_popup": "popup.html"
-  },
-  "icons": {}
+  }
 }
