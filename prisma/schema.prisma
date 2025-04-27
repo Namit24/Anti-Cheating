@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Exam {
+  id          String     @id @default(cuid())
+  roomNumber  String
+  subjectCode String
+  subjectName String
+  status      String     @default("active") // active, completed
+  startTime   DateTime
+  endTime     DateTime?
+  students    Student[]
+  incidents   Incident[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Student {
+  id             String     @id @default(cuid())
+  name           String
+  rollNumber     String
+  roomNumber     String
+  examId         String
+  exam           Exam       @relation(fields: [examId], references: [id])
+  status         String     @default("active") // active, inactive
+  lastActive     DateTime?
+  extensionActive Boolean    @default(true)
+  lastHeartbeat  DateTime?
+  incidents      Incident[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Incident {
+  id           String   @id @default(cuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id])
+  examId       String
+  exam         Exam     @relation(fields: [examId], references: [id])
+  incidentType String // copy_paste, blocked_site, extension_disabled, tab_switch, nlp_suspicious
+  details      String   @db.Text
+  screenshot   String?  @db.Text
+  timestamp    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

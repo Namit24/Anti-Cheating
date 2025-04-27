@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Proctor</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="popup.js" defer></script>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Exam Proctor</h1>
+    <p>Anti-cheating system for online exams</p>
+  </div>
+
+  <div id="login-form" class="form">
+    <h2>Student Registration</h2>
+    <div class="form-group">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" placeholder="Enter your full name">
+    </div>
+    <div class="form-group">
+      <label for="rollNumber">Roll Number</label>
+      <input type="text" id="rollNumber" placeholder="Enter your roll number">
+    </div>
+    <div class="form-group">
+      <label for="roomNumber">Room Number</label>
+      <input type="text" id="roomNumber" placeholder="Enter your room number">
+    </div>
+    <div class="form-group">
+      <label for="exam">Select Exam</label>
+      <select id="exam">
+        <option value="" disabled selected>Loading exams...</option>
+      </select>
+    </div>
+    <button id="register-btn" class="btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+      Register for Exam
+    </button>
+    <div id="error-message" class="error-message"></div>
+
+    <div class="rules">
+      <h3>Exam Rules:</h3>
+      <ul>
+        <li>Do not use AI tools like ChatGPT or GitHub Copilot</li>
+        <li>Do not switch tabs or applications during the exam</li>
+        <li>Do not copy-paste large blocks of code</li>
+        <li>Use only approved online compilers for your work</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="exam-active" class="exam-status hidden">
+    <h2>Exam in Progress</h2>
+    <div class="exam-info">
+      <p><strong>Subject:</strong> <span id="subject-name">-</span></p>
+      <p><strong>Room:</strong> <span id="room-number">-</span></p>
+      <p><strong>Status:</strong> <span class="status active">Active</span></p>
+    </div>
+    <p>You can now open your preferred online compiler to begin your exam.</p>
+    <div class="warning">
+      <strong>Important:</strong> This extension is monitoring your activity. The following actions will be reported:
+      <ul style="margin-top: 8px; margin-left: 16px;">
+        <li>Switching tabs or applications</li>
+        <li>Using AI tools or chatbots</li>
+        <li>Copy-pasting large blocks of code</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+</div>
+</body>
+</html>
